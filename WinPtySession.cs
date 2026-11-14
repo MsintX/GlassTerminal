@@ -24,7 +24,15 @@ namespace GlassTerminal
         private Task outputTask;
         private volatile bool disposed;
 
-        static WinPtySession()\n        {\n            string architectureFolder = IntPtr.Size == 8 ? "x64" : "x86";\n            string nativeDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "winpty", architectureFolder);\n            if (Directory.Exists(nativeDirectory))\n                SetDllDirectory(nativeDirectory);\n        }\n\n        public event Action<byte[]> OutputReceived;
+        static WinPtySession()
+        {
+            string architectureFolder = IntPtr.Size == 8 ? "x64" : "x86";
+            string nativeDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "winpty", architectureFolder);
+            if (Directory.Exists(nativeDirectory))
+                SetDllDirectory(nativeDirectory);
+        }
+
+        public event Action<byte[]> OutputReceived;
         public event Action<Exception> Faulted;
 
         public WinPtySession(string executable, string arguments, string workingDirectory, int columns, int rows)
