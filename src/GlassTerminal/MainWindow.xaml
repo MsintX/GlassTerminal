@@ -10,7 +10,8 @@
         ResizeMode="CanResize"
         Background="Transparent"
         UseLayoutRounding="True"
-        SnapsToDevicePixels="True">
+        SnapsToDevicePixels="True"
+        Closing="Window_Closing">
     <Window.Resources>
         <Style x:Key="CaptionButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Width" Value="38" />
@@ -116,19 +117,29 @@
                     <TextBlock Text="  /  CMD" Foreground="#7FDCEBFA"
                                FontFamily="Segoe UI" FontSize="10" />
                 </StackPanel>
+
                 <Border Grid.Row="1" Margin="0,12,0,12"
                         Background="#1807111B"
                         BorderBrush="#32FFFFFF" BorderThickness="1"
                         CornerRadius="4">
-                    <Grid Margin="14">
-                        <TextBlock Text="GlassTerminal"
-                                   Foreground="#FFF0F5F9"
-                                   FontFamily="Consolas"
-                                   FontSize="14"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Top" />
-                    </Grid>
+                    <TextBox x:Name="TerminalOutput"
+                             Margin="14"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="#FFF0F5F9"
+                             CaretBrush="#FFFFC078"
+                             SelectionBrush="#667CA9C8"
+                             FontFamily="Consolas"
+                             FontSize="14"
+                             IsReadOnly="True"
+                             IsTabStop="False"
+                             AcceptsReturn="True"
+                             TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Auto"
+                             TextChanged="TerminalOutput_TextChanged" />
                 </Border>
+
                 <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -140,16 +151,17 @@
                                FontSize="17"
                                VerticalAlignment="Center"
                                Margin="2,0,9,2" />
-                    <TextBox Grid.Column="1"
-                             IsEnabled="False"
-                             Text="Terminal session is not connected yet"
-                             Foreground="#91E4EAF0"
+                    <TextBox x:Name="CommandInput"
+                             Grid.Column="1"
                              Background="Transparent"
                              BorderThickness="0"
+                             Foreground="#FFF0F5F9"
+                             CaretBrush="#FFFFC078"
                              FontFamily="Consolas"
-                             FontSize="13"
+                             FontSize="14"
                              VerticalContentAlignment="Center"
-                             Padding="0" />
+                             Padding="0"
+                             KeyDown="CommandInput_KeyDown" />
                 </Grid>
             </Grid>
 
@@ -159,12 +171,12 @@
                     BorderThickness="0,1,0,0"
                     CornerRadius="0,0,8,8">
                 <DockPanel Margin="12,0">
-                    <TextBlock Text="WINPTY BACKEND"
+                    <TextBlock Text="CMD PROCESS"
                                Foreground="#A8DCEBFA"
                                FontFamily="Segoe UI"
                                FontSize="9"
                                VerticalAlignment="Center" />
-                    <TextBlock Text="INITIAL BUILD"
+                    <TextBlock Text=".NET FRAMEWORK 4.8"
                                Foreground="#70DCEBFA"
                                FontFamily="Segoe UI"
                                FontSize="9"
