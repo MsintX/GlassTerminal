@@ -56,5 +56,5 @@
     </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\Windows\WPF\v4.0\Microsoft.WinFX.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.WinFX.targets" />
 </Project>
