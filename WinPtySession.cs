@@ -204,7 +204,6 @@ namespace GlassTerminal
 
             int code = WinPty.winpty_error_code(error);
             string message = GetErrorMessage(error);
-            FreeError(error);
             throw new InvalidOperationException(operation + " failed (WinPTY " + code + "). " + message);
         }
 
