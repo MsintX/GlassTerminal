@@ -17,7 +17,9 @@ A Windows terminal application with a Windows Vista / Windows 7 Aero glass-inspi
 - Starts in `C:\Windows\System32`
 - Uses the custom `GT` prompt, followed by the current working directory
 - Sends entered commands to CMD and streams standard output and error back into the terminal view
-- Provides custom window controls and a DWM glass extension when desktop composition is available
+- Uses the native Windows title bar and a compact tab strip
+- Keeps the remaining client area dedicated to the terminal
+- Uses Segoe UI for terminal input and output
 
 The current shell transport uses redirected standard input/output. It is suitable for ordinary CMD commands and command-line tools that work with redirected streams. Full-screen console applications and programs that require a real console/PTY are not supported yet; a WinPTY-backed transport is a later step.
 
