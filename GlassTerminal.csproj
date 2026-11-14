@@ -39,7 +39,8 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xaml" />
     <Reference Include="winpty.NET">
-      <HintPath>packages\winpty.NET.0.4.2\lib\net40\winpty.NET.dll</HintPath>
+      <HintPath>packages\winpty.NET.0.4.2\lib
+et40\winpty.NET.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -53,7 +54,8 @@
     </Compile>
     <Content Include="winpty\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>\n    <Compile Include="WinPtySession.cs" />
+    </Content>
+    <Compile Include="WinPtySession.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
