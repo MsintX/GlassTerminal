@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{60DC8134-EBA5-43B8-BCC9-BB4BC16C2548}") = "GlassTerminal", "GlassTerminal.csproj", "{A9C44A16-1C6B-4F0A-A6C5-3D15A45D9C11}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassTerminal", "GlassTerminal.csproj", "{A9C44A16-1C6B-4F0A-A6C5-3D15A45D9C11}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
