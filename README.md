@@ -17,7 +17,7 @@ A Windows terminal application with a Windows Vista / Windows 7 Aero glass-inspi
 - Displays the welcome banner on every new session
 - Starts in `C:\Windows\System32`
 - Uses the custom `GT` prompt followed by the current working directory
-- Keeps the native Windows title bar and one tab strip
+- Keeps the native Windows title bar and fills the client area with a single terminal session
 - Uses Microsoft YaHei for terminal text and Segoe UI for interface text
 - Restores full-client-area DWM glass on Windows 7 when desktop composition is enabled
 
