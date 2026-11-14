@@ -14,6 +14,8 @@ namespace GlassTerminal
         private const string InitialDirectory = @"C:\Windows\System32";
         private Process shellProcess;
         private bool isClosing;
+        private bool isAppendingOutput;
+        private int inputStart;
 
         public MainWindow()
         {
@@ -23,12 +25,11 @@ namespace GlassTerminal
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            TerminalOutput.AppendText(
-                "MsintX GlassTerminal\r\n" +
-                "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
-
+            AppendOutput("MsintX GlassTerminal\r\n" +
+                         "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
             StartShell();
-            CommandInput.Focus();
+            TerminalOutput.Focus();
+            TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
         }
 
         private void StartShell()
@@ -113,44 +114,123 @@ namespace GlassTerminal
                 if (isClosing)
                     return;
 
+                isAppendingOutput = true;
                 TerminalOutput.AppendText(text);
+                inputStart = TerminalOutput.Text.Length;
+                TerminalOutput.CaretIndex = inputStart;
                 TerminalOutput.ScrollToEnd();
+                isAppendingOutput = false;
             }));
         }
 
-        private void CommandInput_KeyDown(object sender, KeyEventArgs e)
+        private void TerminalOutput_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key != Key.Enter)
+            int selectionStart = TerminalOutput.SelectionStart;
+            int selectionEnd = selectionStart + TerminalOutput.SelectionLength;
+            int caret = TerminalOutput.CaretIndex;
+
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                string command = TerminalOutput.Text.Substring(inputStart);
+                TerminalOutput.AppendText(Environment.NewLine);
+                inputStart = TerminalOutput.Text.Length;
+                TerminalOutput.CaretIndex = inputStart;
+                TerminalOutput.ScrollToEnd();
+
+                if (shellProcess == null || shellProcess.HasExited)
+                {
+                    AppendOutput("终端会话尚未启动。" + Environment.NewLine);
+                    return;
+                }
+
+                try
+                {
+                    shellProcess.StandardInput.WriteLine(command);
+                    shellProcess.StandardInput.Flush();
+                }
+                catch (Exception ex)
+                {
+                    AppendOutput("输入失败: " + ex.Message + Environment.NewLine);
+                }
                 return;
+            }
 
-            e.Handled = true;
-
-            string command = CommandInput.Text;
-            CommandInput.Clear();
-
-            if (shellProcess == null || shellProcess.HasExited)
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                e.Key == Key.A)
             {
-                AppendOutput("终端会话尚未启动。\r\n");
+                e.Handled = true;
+                TerminalOutput.Select(inputStart, TerminalOutput.Text.Length - inputStart);
                 return;
             }
 
-            TerminalOutput.AppendText(command + "\r\n");
-            TerminalOutput.ScrollToEnd();
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                e.Key == Key.V)
+            {
+                e.Handled = true;
+                if (selectionStart >= inputStart)
+                {
+                    string paste = Clipboard.GetText();
+                    if (!String.IsNullOrEmpty(paste))
+                        TerminalOutput.SelectedText = paste;
+                }
+                return;
+            }
 
-            try
+            if (e.Key == Key.Back)
             {
-                shellProcess.StandardInput.WriteLine(command);
-                shellProcess.StandardInput.Flush();
+                if (selectionStart < inputStart || (TerminalOutput.SelectionLength == 0 && caret <= inputStart))
+                    e.Handled = true;
+                return;
             }
-            catch (Exception ex)
+
+            if (e.Key == Key.Delete && selectionStart < inputStart)
             {
-                AppendOutput("输入失败: " + ex.Message + "\r\n");
+                e.Handled = true;
+                return;
             }
+
+            if (e.Key == Key.Left && TerminalOutput.SelectionLength == 0 && caret <= inputStart)
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Home)
+            {
+                e.Handled = true;
+                TerminalOutput.CaretIndex = inputStart;
+                return;
+            }
+
+            if (selectionStart < inputStart &&
+                (e.Key == Key.Delete || e.Key == Key.Back || e.Key == Key.X))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void TerminalOutput_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (TerminalOutput.SelectionStart < inputStart)
+                e.Handled = true;
+        }
+
+        private void TerminalOutput_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TerminalOutput.CaretIndex < inputStart)
+                e.Handled = true;
+        }
+
+        private void TerminalOutput_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TerminalOutput.CaretIndex < inputStart)
+                TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
         }
 
         private void ShellProcess_Exited(object sender, EventArgs e)
         {
-            AppendOutput("\r\n[终端会话已结束]\r\n");
+            AppendOutput(Environment.NewLine + "[终端会话已结束]" + Environment.NewLine);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -191,6 +271,9 @@ namespace GlassTerminal
 
         private void TerminalOutput_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (!isAppendingOutput && TerminalOutput.CaretIndex < inputStart)
+                TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
+
             TerminalOutput.ScrollToEnd();
         }
     }
