@@ -8,20 +8,21 @@
         MinHeight="320"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
-        Background="#FF0B1724"
+        Background="Transparent"
         FontFamily="Segoe UI"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         Closing="Window_Closing">
-    <Grid Background="#FF0B1724">
+    <Grid x:Name="WindowRoot" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="34" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Background="#FF142536"
-                BorderBrush="#FF34495D"
+        <Border x:Name="TabStrip"
+                Grid.Row="0"
+                Background="#66142536"
+                BorderBrush="#667F9AB2"
                 BorderThickness="0,0,0,1">
             <TabControl Background="Transparent"
                         BorderThickness="0"
@@ -31,8 +32,8 @@
                 <TabItem Header="CMD"
                          Padding="16,3"
                          Foreground="#FFF0F5F9"
-                         Background="#FF0B1724"
-                         BorderBrush="#FF34495D" />
+                         Background="#5534495D"
+                         BorderBrush="#667F9AB2" />
             </TabControl>
         </Border>
 
@@ -44,7 +45,7 @@
                  Foreground="#FFF0F5F9"
                  CaretBrush="#FFFFC078"
                  SelectionBrush="#667CA9C8"
-                 FontFamily="Microsoft YaHei, Segoe UI"
+                 FontFamily="Microsoft YaHei"
                  FontSize="14"
                  AcceptsReturn="True"
                  AcceptsTab="True"
@@ -55,7 +56,6 @@
                  PreviewKeyDown="TerminalOutput_PreviewKeyDown"
                  PreviewTextInput="TerminalOutput_PreviewTextInput"
                  PreviewMouseDown="TerminalOutput_PreviewMouseDown"
-                 PreviewMouseUp="TerminalOutput_PreviewMouseUp"
-                 />
+                 PreviewMouseUp="TerminalOutput_PreviewMouseUp" />
     </Grid>
 </Window>

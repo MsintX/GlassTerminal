@@ -1,18 +1,24 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace GlassTerminal
 {
     public partial class MainWindow : Window
     {
         private const string InitialDirectory = @"C:\Windows\System32";
+        private const int WmDwmCompositionChanged = 0x031E;
+
         private Process shellProcess;
+        private HwndSource windowSource;
         private bool isClosing;
         private bool isAppendingOutput;
         private int inputStart;
@@ -21,6 +27,96 @@ namespace GlassTerminal
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+
+            windowSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            if (windowSource != null)
+                windowSource.AddHook(WindowMessageHook);
+
+            ApplyAeroGlass();
+        }
+
+        private IntPtr WindowMessageHook(
+            IntPtr hwnd,
+            int message,
+            IntPtr wParam,
+            IntPtr lParam,
+            ref bool handled)
+        {
+            if (message == WmDwmCompositionChanged)
+                ApplyAeroGlass();
+
+            return IntPtr.Zero;
+        }
+
+        private void ApplyAeroGlass()
+        {
+            // Classic DWM glass is a Windows Vista/7 feature. Newer Windows
+            // versions use a solid fallback instead of pretending this is Aero.
+            Version osVersion = Environment.OSVersion.Version;
+            bool isWindows7 = osVersion.Major == 6 && osVersion.Minor == 1;
+            bool isCompositionEnabled = false;
+
+            if (isWindows7)
+            {
+                try
+                {
+                    isCompositionEnabled = DwmIsCompositionEnabled(out isCompositionEnabled) == 0
+                        && isCompositionEnabled;
+                }
+                catch (DllNotFoundException)
+                {
+                    isCompositionEnabled = false;
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    isCompositionEnabled = false;
+                }
+            }
+
+            if (isWindows7 && isCompositionEnabled)
+            {
+                try
+                {
+                    Margins margins = new Margins
+                    {
+                        Left = -1,
+                        Right = -1,
+                        Top = -1,
+                        Bottom = -1
+                    };
+
+                    int result = DwmExtendFrameIntoClientArea(
+                        new WindowInteropHelper(this).Handle,
+                        ref margins);
+
+                    if (result == 0)
+                    {
+                        if (windowSource != null && windowSource.CompositionTarget != null)
+                            windowSource.CompositionTarget.BackgroundColor = Colors.Transparent;
+
+                        WindowRoot.Background = Brushes.Transparent;
+                        TabStrip.Background = new SolidColorBrush(Color.FromArgb(0x66, 0x14, 0x25, 0x36));
+                        return;
+                    }
+                }
+                catch (DllNotFoundException)
+                {
+                }
+                catch (EntryPointNotFoundException)
+                {
+                }
+            }
+
+            if (windowSource != null && windowSource.CompositionTarget != null)
+                windowSource.CompositionTarget.BackgroundColor = Color.FromRgb(0x0B, 0x17, 0x24);
+
+            WindowRoot.Background = new SolidColorBrush(Color.FromRgb(0x0B, 0x17, 0x24));
+            TabStrip.Background = new SolidColorBrush(Color.FromRgb(0x14, 0x25, 0x36));
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -126,7 +222,6 @@ namespace GlassTerminal
         private void TerminalOutput_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             int selectionStart = TerminalOutput.SelectionStart;
-            int selectionEnd = selectionStart + TerminalOutput.SelectionLength;
             int caret = TerminalOutput.CaretIndex;
 
             if (e.Key == Key.Enter)
@@ -179,7 +274,8 @@ namespace GlassTerminal
 
             if (e.Key == Key.Back)
             {
-                if (selectionStart < inputStart || (TerminalOutput.SelectionLength == 0 && caret <= inputStart))
+                if (selectionStart < inputStart ||
+                    (TerminalOutput.SelectionLength == 0 && caret <= inputStart))
                     e.Handled = true;
                 return;
             }
@@ -205,9 +301,7 @@ namespace GlassTerminal
 
             if (selectionStart < inputStart &&
                 (e.Key == Key.Delete || e.Key == Key.Back || e.Key == Key.X))
-            {
                 e.Handled = true;
-            }
         }
 
         private void TerminalOutput_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -276,5 +370,22 @@ namespace GlassTerminal
 
             TerminalOutput.ScrollToEnd();
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Margins
+        {
+            public int Left;
+            public int Right;
+            public int Top;
+            public int Bottom;
+        }
+
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmIsCompositionEnabled(out bool enabled);
+
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmExtendFrameIntoClientArea(
+            IntPtr hwnd,
+            ref Margins margins);
     }
 }

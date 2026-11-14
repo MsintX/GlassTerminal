@@ -6,30 +6,33 @@ A Windows terminal application with a Windows Vista / Windows 7 Aero glass-inspi
 
 - Windows 7 SP1 and later
 - WPF + C# on .NET Framework 4.8
-- A floating glass-first window rather than a conventional opaque terminal frame
-- CMD and Windows PowerShell support
-- A real interactive shell session
+- Keep the native Windows title bar
+- Extend classic DWM Aero glass through the WPF client area on Windows 7
+- Use the entire client area below the tab strip for the terminal
+- Support real interactive console sessions
 
-## First runnable version
+## Current prototype
 
-- Starts a real `cmd.exe` process when the application opens
-- Displays the GlassTerminal welcome banner on every new session
+- Starts a real `cmd.exe` process
+- Displays the welcome banner on every new session
 - Starts in `C:\Windows\System32`
-- Uses the custom `GT` prompt, followed by the current working directory
-- Sends entered commands to CMD and streams standard output and error back into the terminal view
-- Uses the native Windows title bar and a compact tab strip
-- Uses the entire area below the tab strip as one terminal surface
-- Accepts commands inline at the end of the current shell prompt, like traditional CMD
-- Uses Microsoft YaHei with Segoe UI fallback for terminal text
+- Uses the custom `GT` prompt followed by the current working directory
+- Keeps the native Windows title bar and one tab strip
+- Uses Microsoft YaHei for terminal text and Segoe UI for interface text
+- Restores full-client-area DWM glass on Windows 7 when desktop composition is enabled
 
-The current shell transport uses redirected standard input/output. It is suitable for ordinary CMD commands and command-line tools that work with redirected streams. Full-screen console applications and programs that require a real console/PTY are not supported yet; a WinPTY-backed transport is a later step.
+The shell transport is still based on redirected standard input/output, and its TextBox input adapter is only a temporary prototype. It is **not a complete terminal emulator**. Interactive console applications, VT cursor movement, alternate screen buffers, terminal resize events, and reliable control-key handling require a PTY transport and a VT terminal engine.
+
+## Terminal architecture investigation
+
+See [TERMINAL-RESEARCH.md](TERMINAL-RESEARCH.md) for the compatibility review and the proposed PTY / terminal-rendering architecture.
 
 ## Build
 
 Open `GlassTerminal.sln` in Visual Studio 2022 with the .NET desktop development workload and the .NET Framework 4.8 Developer Pack installed.
 
-All project and source files are kept in the repository root. No third-party UI framework or additional runtime is required for this first version.
+All project and source files are kept in the repository root. No third-party UI framework is used.
 
 ## Compatibility notes
 
-The project targets .NET Framework 4.8 to retain Windows 7 SP1 compatibility. DWM glass is enabled when desktop composition is available; the application should still start when composition is unavailable.
+Classic DWM Aero glass is available on Windows Vista / Windows 7 when desktop composition is enabled. This prototype enables the full client-area glass frame on Windows 7 and falls back to an opaque dark surface when classic glass is unavailable.
