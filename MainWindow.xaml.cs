@@ -55,63 +55,42 @@ namespace GlassTerminal
 
         private void ApplyAeroGlass()
         {
-            // Classic DWM glass is a Windows Vista/7 feature. Newer Windows
-            // versions use a solid fallback instead of pretending this is Aero.
-            Version osVersion = Environment.OSVersion.Version;
-            bool isWindows7 = osVersion.Major == 6 && osVersion.Minor == 1;
-            bool isCompositionEnabled = false;
-
-            if (isWindows7)
+            // Do not gate glass on the Windows version. This application may run
+            // with a replacement DWM that restores the classic Aero behavior.
+            // Let the active DWM implementation decide whether the operation works.
+            try
             {
-                try
+                Margins margins = new Margins
                 {
-                    isCompositionEnabled = DwmIsCompositionEnabled(out isCompositionEnabled) == 0
-                        && isCompositionEnabled;
-                }
-                catch (DllNotFoundException)
+                    Left = -1,
+                    Right = -1,
+                    Top = -1,
+                    Bottom = -1
+                };
+
+                int result = DwmExtendFrameIntoClientArea(
+                    new WindowInteropHelper(this).Handle,
+                    ref margins);
+
+                if (result == 0)
                 {
-                    isCompositionEnabled = false;
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    isCompositionEnabled = false;
+                    if (windowSource != null && windowSource.CompositionTarget != null)
+                        windowSource.CompositionTarget.BackgroundColor = Colors.Transparent;
+
+                    WindowRoot.Background = Brushes.Transparent;
+                    TabStrip.Background = new SolidColorBrush(Color.FromArgb(0x66, 0x14, 0x25, 0x36));
+                    return;
                 }
             }
-
-            if (isWindows7 && isCompositionEnabled)
+            catch (DllNotFoundException)
             {
-                try
-                {
-                    Margins margins = new Margins
-                    {
-                        Left = -1,
-                        Right = -1,
-                        Top = -1,
-                        Bottom = -1
-                    };
-
-                    int result = DwmExtendFrameIntoClientArea(
-                        new WindowInteropHelper(this).Handle,
-                        ref margins);
-
-                    if (result == 0)
-                    {
-                        if (windowSource != null && windowSource.CompositionTarget != null)
-                            windowSource.CompositionTarget.BackgroundColor = Colors.Transparent;
-
-                        WindowRoot.Background = Brushes.Transparent;
-                        TabStrip.Background = new SolidColorBrush(Color.FromArgb(0x66, 0x14, 0x25, 0x36));
-                        return;
-                    }
-                }
-                catch (DllNotFoundException)
-                {
-                }
-                catch (EntryPointNotFoundException)
-                {
-                }
+            }
+            catch (EntryPointNotFoundException)
+            {
             }
 
+            // Only use the opaque fallback when the active DWM implementation
+            // does not expose or accept DwmExtendFrameIntoClientArea.
             if (windowSource != null && windowSource.CompositionTarget != null)
                 windowSource.CompositionTarget.BackgroundColor = Color.FromRgb(0x0B, 0x17, 0x24);
 
@@ -379,9 +358,6 @@ namespace GlassTerminal
             public int Top;
             public int Bottom;
         }
-
-        [DllImport("dwmapi.dll", PreserveSig = true)]
-        private static extern int DwmIsCompositionEnabled(out bool enabled);
 
         [DllImport("dwmapi.dll", PreserveSig = true)]
         private static extern int DwmExtendFrameIntoClientArea(
