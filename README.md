@@ -25,7 +25,7 @@ The current shell transport uses redirected standard input/output. It is suitabl
 
 Open `GlassTerminal.sln` in Visual Studio 2022 with the .NET desktop development workload and the .NET Framework 4.8 Developer Pack installed.
 
-No third-party UI framework or additional runtime is required for this first version.
+All project and source files are kept in the repository root. No third-party UI framework or additional runtime is required for this first version.
 
 ## Compatibility notes
 
