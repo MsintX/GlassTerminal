@@ -18,8 +18,9 @@ A Windows terminal application with a Windows Vista / Windows 7 Aero glass-inspi
 - Uses the custom `GT` prompt, followed by the current working directory
 - Sends entered commands to CMD and streams standard output and error back into the terminal view
 - Uses the native Windows title bar and a compact tab strip
-- Keeps the remaining client area dedicated to the terminal
-- Uses Segoe UI for terminal input and output
+- Uses the entire area below the tab strip as one terminal surface
+- Accepts commands inline at the end of the current shell prompt, like traditional CMD
+- Uses Microsoft YaHei with Segoe UI fallback for terminal text
 
 The current shell transport uses redirected standard input/output. It is suitable for ordinary CMD commands and command-line tools that work with redirected streams. Full-screen console applications and programs that require a real console/PTY are not supported yet; a WinPTY-backed transport is a later step.
 
