@@ -63,4 +63,13 @@
     </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Target Name="CopyWinPtyNativeBinaries" AfterTargets="Build">
+    <ItemGroup>
+      <WinPtyNative Include="packages\winpty.NET.0.4.2\content\winpty\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WinPtyNative)"
+          DestinationFiles="@(WinPtyNative->'$(OutDir)winpty\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>
