@@ -14,31 +14,7 @@
         SnapsToDevicePixels="True"
         Closing="Window_Closing">
     <Grid x:Name="WindowRoot" Background="Transparent">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="34" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <Border x:Name="TabStrip"
-                Grid.Row="0"
-                Background="#66142536"
-                BorderBrush="#667F9AB2"
-                BorderThickness="0,0,0,1">
-            <TabControl Background="Transparent"
-                        BorderThickness="0"
-                        Padding="8,3,0,0"
-                        FontFamily="Segoe UI"
-                        FontSize="12">
-                <TabItem Header="CMD"
-                         Padding="16,3"
-                         Foreground="#FFF0F5F9"
-                         Background="#5534495D"
-                         BorderBrush="#667F9AB2" />
-            </TabControl>
-        </Border>
-
         <TextBox x:Name="TerminalOutput"
-                 Grid.Row="1"
                  Margin="14,10,14,12"
                  Background="Transparent"
                  BorderThickness="0"
@@ -50,8 +26,8 @@
                  AcceptsReturn="True"
                  AcceptsTab="True"
                  TextWrapping="NoWrap"
-                 VerticalScrollBarVisibility="Auto"
-                 HorizontalScrollBarVisibility="Auto"
+                 VerticalScrollBarVisibility="Hidden"
+                 HorizontalScrollBarVisibility="Hidden"
                  TextChanged="TerminalOutput_TextChanged"
                  PreviewKeyDown="TerminalOutput_PreviewKeyDown"
                  PreviewTextInput="TerminalOutput_PreviewTextInput"
