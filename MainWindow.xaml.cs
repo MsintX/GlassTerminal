@@ -78,7 +78,6 @@ namespace GlassTerminal
                         windowSource.CompositionTarget.BackgroundColor = Colors.Transparent;
 
                     WindowRoot.Background = Brushes.Transparent;
-                    TabStrip.Background = new SolidColorBrush(Color.FromArgb(0x66, 0x14, 0x25, 0x36));
                     return;
                 }
             }
@@ -95,7 +94,6 @@ namespace GlassTerminal
                 windowSource.CompositionTarget.BackgroundColor = Color.FromRgb(0x0B, 0x17, 0x24);
 
             WindowRoot.Background = new SolidColorBrush(Color.FromRgb(0x0B, 0x17, 0x24));
-            TabStrip.Background = new SolidColorBrush(Color.FromRgb(0x14, 0x25, 0x36));
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
