@@ -18,6 +18,6 @@
         <cefSharp:ChromiumWebBrowser x:Name="TerminalBrowser"
                                      Margin="14,10,14,12"
                                      Background="Transparent"
-                                     BrowserSettings="{x:Null}" />
+                                     />
     </Grid>
 </Window>
