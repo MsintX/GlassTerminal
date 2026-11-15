@@ -51,8 +51,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="winpty.NET">
-      <HintPath>packages\winpty.NET.0.4.2\lib
-et40\winpty.NET.dll</HintPath>
+      <HintPath>packages\winpty.NET.0.4.2\lib\net40\winpty.NET.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -64,7 +63,10 @@ et40\winpty.NET.dll</HintPath>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Content Include="winpty\**\*">
+    <Content Include="Terminal\\**\\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="winpty\\**\\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="WinPtySession.cs" />
