@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
+$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDirectory
 $vendorDirectory = Join-Path $projectRoot "Terminal\vendor"
 
 $assets = @(
