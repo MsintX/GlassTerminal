@@ -80,7 +80,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
     <None Include="packages.config" />
-    <None Include="package.json" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -91,6 +90,20 @@
           Condition="Exists('packages\CefSharp.Common.109.1.110\build\CefSharp.Common.targets')" />
   <Import Project="packages\CefSharp.Wpf.109.1.110\build\CefSharp.Wpf.targets"
           Condition="Exists('packages\CefSharp.Wpf.109.1.110\build\CefSharp.Wpf.targets')" />
+
+  <Target Name="PrepareTerminalAssets" BeforeTargets="BeforeBuild">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)scripts\Prepare-Terminal.ps1&quot;" />
+  </Target>
+
+  <Target Name="CopyTerminalAssets" AfterTargets="Build">
+    <ItemGroup>
+      <TerminalVendor Include="Terminal\vendor\xterm.js;Terminal\vendor\xterm.css;Terminal\vendor\addon-fit.js" />
+    </ItemGroup>
+    <MakeDir Directories="$(OutDir)Terminal\vendor" />
+    <Copy SourceFiles="@(TerminalVendor)"
+          DestinationFolder="$(OutDir)Terminal\vendor"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <Target Name="CopyWinPtyNativeBinaries" AfterTargets="Build">
     <ItemGroup>
