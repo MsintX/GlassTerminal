@@ -142,6 +142,10 @@ namespace GlassTerminal
 
             try
             {
+                WriteTerminalText(
+                    "MsintX GlassTerminal\r\n" +
+                    "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
+
                 string commandProcessor = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.System),
                     "cmd.exe");
@@ -155,10 +159,7 @@ namespace GlassTerminal
 
                 terminalSession.OutputReceived += TerminalSession_OutputReceived;
                 terminalSession.Faulted += TerminalSession_Faulted;
-
-                WriteTerminalText(
-                    "MsintX GlassTerminal\r\n" +
-                    "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
+                terminalSession.StartReading();
             }
             catch (Exception ex)
             {
