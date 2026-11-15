@@ -1,14 +1,11 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using CefSharp;
 
 namespace GlassTerminal
 {
@@ -17,15 +14,23 @@ namespace GlassTerminal
         private const string InitialDirectory = @"C:\Windows\System32";
         private const int WmDwmCompositionChanged = 0x031E;
 
-        private Process shellProcess;
         private HwndSource windowSource;
+        private WinPtySession terminalSession;
+        private readonly TerminalBridge terminalBridge;
         private bool isClosing;
-        private bool isAppendingOutput;
-        private int inputStart;
+        private bool terminalPageLoaded;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            terminalBridge = new TerminalBridge(this);
+            TerminalBrowser.JavascriptObjectRepository.Register(
+                "bridge",
+                terminalBridge,
+                true,
+                BindingOptions.DefaultBinder);
+            TerminalBrowser.FrameLoadEnd += TerminalBrowser_FrameLoadEnd;
             Loaded += MainWindow_Loaded;
         }
 
@@ -55,9 +60,6 @@ namespace GlassTerminal
 
         private void ApplyAeroGlass()
         {
-            // Do not gate glass on the Windows version. This application may run
-            // with a replacement DWM that restores the classic Aero behavior.
-            // Let the active DWM implementation decide whether the operation works.
             try
             {
                 Margins margins = new Margins
@@ -88,8 +90,6 @@ namespace GlassTerminal
             {
             }
 
-            // Only use the opaque fallback when the active DWM implementation
-            // does not expose or accept DwmExtendFrameIntoClientArea.
             if (windowSource != null && windowSource.CompositionTarget != null)
                 windowSource.CompositionTarget.BackgroundColor = Color.FromRgb(0x0B, 0x17, 0x24);
 
@@ -98,254 +98,150 @@ namespace GlassTerminal
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            AppendOutput("MsintX GlassTerminal\r\n" +
-                         "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
-            StartShell();
-            TerminalOutput.Focus();
-            TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
+            string pagePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Terminal",
+                "index.html");
+
+            if (!File.Exists(pagePath))
+            {
+                MessageBox.Show(this,
+                    "找不到本地终端页面：" + pagePath + Environment.NewLine +
+                    "请先在项目目录运行 npm install 和 npm run prepare-terminal。",
+                    "GlassTerminal",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            TerminalBrowser.Address = new Uri(pagePath).AbsoluteUri;
+        }
+
+        private void TerminalBrowser_FrameLoadEnd(object sender, FrameLoadEndEventArgs e)
+        {
+            if (!e.Frame.IsMain || isClosing)
+                return;
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (isClosing || terminalPageLoaded)
+                    return;
+
+                terminalPageLoaded = true;
+                StartShell();
+            }));
         }
 
         private void StartShell()
         {
             if (!Directory.Exists(InitialDirectory))
             {
-                AppendOutput("无法找到初始目录: " + InitialDirectory + "\r\n");
+                WriteTerminalText("无法找到初始目录: " + InitialDirectory + "\r\n");
                 return;
             }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "cmd.exe"),
-                Arguments = "/Q /D /K \"prompt GT $P$G\"",
-                WorkingDirectory = InitialDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.Default,
-                StandardErrorEncoding = Encoding.Default
-            };
-
             try
             {
-                shellProcess = new Process();
-                shellProcess.StartInfo = startInfo;
-                shellProcess.EnableRaisingEvents = true;
-                shellProcess.Exited += ShellProcess_Exited;
+                string commandProcessor = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    "cmd.exe");
 
-                if (!shellProcess.Start())
-                {
-                    AppendOutput("无法启动 cmd.exe。\r\n");
-                    return;
-                }
+                terminalSession = new WinPtySession(
+                    commandProcessor,
+                    "/Q /D /K \"prompt GT $P$G\"",
+                    InitialDirectory,
+                    100,
+                    30);
 
-                ReadStreamAsync(shellProcess.StandardOutput);
-                ReadStreamAsync(shellProcess.StandardError);
+                terminalSession.OutputReceived += TerminalSession_OutputReceived;
+                terminalSession.Faulted += TerminalSession_Faulted;
+
+                WriteTerminalText(
+                    "MsintX GlassTerminal\r\n" +
+                    "版权所有 (C) MsintX 保留所有权利\r\n\r\n");
             }
             catch (Exception ex)
             {
-                AppendOutput("启动终端失败: " + ex.Message + "\r\n");
-                if (shellProcess != null)
-                {
-                    shellProcess.Dispose();
-                    shellProcess = null;
-                }
+                WriteTerminalText("启动终端失败: " + ex.Message + "\r\n");
             }
         }
 
-        private async void ReadStreamAsync(StreamReader reader)
+        private void TerminalSession_OutputReceived(byte[] data)
         {
-            char[] buffer = new char[1024];
-
-            try
-            {
-                while (!isClosing)
-                {
-                    int count = await reader.ReadAsync(buffer, 0, buffer.Length);
-                    if (count <= 0)
-                        break;
-
-                    AppendOutput(new string(buffer, 0, count));
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (IOException)
-            {
-            }
-        }
-
-        private void AppendOutput(string text)
-        {
-            if (isClosing || !IsLoaded)
-                return;
-
+            string base64 = Convert.ToBase64String(data);
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (isClosing)
-                    return;
-
-                isAppendingOutput = true;
-                TerminalOutput.AppendText(text);
-                inputStart = TerminalOutput.Text.Length;
-                TerminalOutput.CaretIndex = inputStart;
-                TerminalOutput.ScrollToEnd();
-                isAppendingOutput = false;
+                if (!isClosing && TerminalBrowser.IsBrowserInitialized)
+                    TerminalBrowser.ExecuteScriptAsync(
+                        "window.writeTerminalBase64('" + base64 + "');");
             }));
         }
 
-        private void TerminalOutput_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void TerminalSession_Faulted(Exception exception)
         {
-            int selectionStart = TerminalOutput.SelectionStart;
-            int caret = TerminalOutput.CaretIndex;
-
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                string command = TerminalOutput.Text.Substring(inputStart);
-                TerminalOutput.AppendText(Environment.NewLine);
-                inputStart = TerminalOutput.Text.Length;
-                TerminalOutput.CaretIndex = inputStart;
-                TerminalOutput.ScrollToEnd();
-
-                if (shellProcess == null || shellProcess.HasExited)
-                {
-                    AppendOutput("终端会话尚未启动。" + Environment.NewLine);
-                    return;
-                }
-
-                try
-                {
-                    shellProcess.StandardInput.WriteLine(command);
-                    shellProcess.StandardInput.Flush();
-                }
-                catch (Exception ex)
-                {
-                    AppendOutput("输入失败: " + ex.Message + Environment.NewLine);
-                }
-                return;
-            }
-
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
-                e.Key == Key.A)
-            {
-                e.Handled = true;
-                TerminalOutput.Select(inputStart, TerminalOutput.Text.Length - inputStart);
-                return;
-            }
-
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
-                e.Key == Key.V)
-            {
-                e.Handled = true;
-                if (selectionStart >= inputStart)
-                {
-                    string paste = Clipboard.GetText();
-                    if (!String.IsNullOrEmpty(paste))
-                        TerminalOutput.SelectedText = paste;
-                }
-                return;
-            }
-
-            if (e.Key == Key.Back)
-            {
-                if (selectionStart < inputStart ||
-                    (TerminalOutput.SelectionLength == 0 && caret <= inputStart))
-                    e.Handled = true;
-                return;
-            }
-
-            if (e.Key == Key.Delete && selectionStart < inputStart)
-            {
-                e.Handled = true;
-                return;
-            }
-
-            if (e.Key == Key.Left && TerminalOutput.SelectionLength == 0 && caret <= inputStart)
-            {
-                e.Handled = true;
-                return;
-            }
-
-            if (e.Key == Key.Home)
-            {
-                e.Handled = true;
-                TerminalOutput.CaretIndex = inputStart;
-                return;
-            }
-
-            if (selectionStart < inputStart &&
-                (e.Key == Key.Delete || e.Key == Key.Back || e.Key == Key.X))
-                e.Handled = true;
+            WriteTerminalText("\r\n[终端后端错误] " + exception.Message + "\r\n");
         }
 
-        private void TerminalOutput_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void WriteTerminalText(string text)
         {
-            if (TerminalOutput.SelectionStart < inputStart)
-                e.Handled = true;
+            if (isClosing)
+                return;
+
+            string base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!isClosing && TerminalBrowser.IsBrowserInitialized)
+                    TerminalBrowser.ExecuteScriptAsync(
+                        "window.writeTerminalBase64('" + base64 + "');");
+            }));
         }
 
-        private void TerminalOutput_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        private void SendInput(string data)
         {
-            if (TerminalOutput.CaretIndex < inputStart)
-                e.Handled = true;
+            if (isClosing || terminalSession == null)
+                return;
+
+            try
+            {
+                terminalSession.WriteText(data);
+            }
+            catch (Exception ex)
+            {
+                WriteTerminalText("\r\n[输入失败] " + ex.Message + "\r\n");
+            }
         }
 
-        private void TerminalOutput_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        private void ResizeTerminal(int columns, int rows)
         {
-            if (TerminalOutput.CaretIndex < inputStart)
-                TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
-        }
+            if (isClosing || terminalSession == null)
+                return;
 
-        private void ShellProcess_Exited(object sender, EventArgs e)
-        {
-            AppendOutput(Environment.NewLine + "[终端会话已结束]" + Environment.NewLine);
+            try
+            {
+                terminalSession.Resize(columns, rows);
+            }
+            catch (Exception)
+            {
+                // A resize can race with shell shutdown. The next session owns
+                // a fresh PTY, so a late resize is intentionally ignored.
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             isClosing = true;
 
-            if (shellProcess == null)
-                return;
-
-            try
+            if (terminalSession != null)
             {
-                if (!shellProcess.HasExited)
-                {
-                    shellProcess.StandardInput.WriteLine("exit");
-                    shellProcess.StandardInput.Flush();
-
-                    if (!shellProcess.WaitForExit(500))
-                        shellProcess.Kill();
-                }
+                terminalSession.Dispose();
+                terminalSession = null;
             }
-            catch
+
+            if (windowSource != null)
             {
-                try
-                {
-                    if (!shellProcess.HasExited)
-                        shellProcess.Kill();
-                }
-                catch
-                {
-                }
+                windowSource.RemoveHook(WindowMessageHook);
+                windowSource = null;
             }
-            finally
-            {
-                shellProcess.Dispose();
-                shellProcess = null;
-            }
-        }
-
-        private void TerminalOutput_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (!isAppendingOutput && TerminalOutput.CaretIndex < inputStart)
-                TerminalOutput.CaretIndex = TerminalOutput.Text.Length;
-
-            TerminalOutput.ScrollToEnd();
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -361,5 +257,31 @@ namespace GlassTerminal
         private static extern int DwmExtendFrameIntoClientArea(
             IntPtr hwnd,
             ref Margins margins);
+
+        public sealed class TerminalBridge
+        {
+            private readonly MainWindow owner;
+
+            public TerminalBridge(MainWindow owner)
+            {
+                this.owner = owner;
+            }
+
+            public void SendInput(string data)
+            {
+                owner.Dispatcher.BeginInvoke(new Action(() => owner.SendInput(data)));
+            }
+
+            public void Resize(int columns, int rows)
+            {
+                owner.Dispatcher.BeginInvoke(
+                    new Action(() => owner.ResizeTerminal(columns, rows)));
+            }
+
+            public void Ready()
+            {
+                // The page is already loaded before this callback can be invoked.
+            }
+        }
     }
 }
