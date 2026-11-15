@@ -30,7 +30,6 @@ namespace GlassTerminal
                 terminalBridge,
                 true,
                 BindingOptions.DefaultBinder);
-            TerminalBrowser.FrameLoadEnd += TerminalBrowser_FrameLoadEnd;
             Loaded += MainWindow_Loaded;
         }
 
@@ -115,21 +114,6 @@ namespace GlassTerminal
             }
 
             TerminalBrowser.Address = new Uri(pagePath).AbsoluteUri;
-        }
-
-        private void TerminalBrowser_FrameLoadEnd(object sender, FrameLoadEndEventArgs e)
-        {
-            if (!e.Frame.IsMain || isClosing)
-                return;
-
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (isClosing || terminalPageLoaded)
-                    return;
-
-                terminalPageLoaded = true;
-                StartShell();
-            }));
         }
 
         private void StartShell()
@@ -281,7 +265,14 @@ namespace GlassTerminal
 
             public void Ready()
             {
-                // The page is already loaded before this callback can be invoked.
+                owner.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (owner.isClosing || owner.terminalPageLoaded)
+                        return;
+
+                    owner.terminalPageLoaded = true;
+                    owner.StartShell();
+                }));
             }
         }
     }
