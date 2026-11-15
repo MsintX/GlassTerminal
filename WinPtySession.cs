@@ -97,7 +97,6 @@ namespace GlassTerminal
                     threadHandle = IntPtr.Zero;
                 }
 
-                outputTask = Task.Run((Func<Task>)ReadOutputAsync);
             }
             catch
             {
@@ -112,6 +111,15 @@ namespace GlassTerminal
                 if (config != IntPtr.Zero)
                     WinPty.winpty_config_free(config);
             }
+        }
+
+        public void StartReading()
+        {
+            ThrowIfDisposed();
+            if (outputTask != null)
+                throw new InvalidOperationException("The WinPTY output reader has already been started.");
+
+            outputTask = Task.Run((Func<Task>)ReadOutputAsync);
         }
 
         public void Write(byte[] data)
