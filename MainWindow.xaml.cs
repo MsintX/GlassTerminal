@@ -114,7 +114,7 @@ namespace GlassTerminal
             {
                 MessageBox.Show(this,
                     "终端前端资源尚未准备完成。" + Environment.NewLine +
-                    "请在项目根目录运行 npm install 和 npm run prepare-terminal。",
+                    "请检查网络连接后重新生成项目，构建过程会自动下载所需资源。",
                     "GlassTerminal",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
