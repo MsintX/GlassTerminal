@@ -102,11 +102,19 @@ namespace GlassTerminal
                 "Terminal",
                 "index.html");
 
-            if (!File.Exists(pagePath))
+            string vendorPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Terminal",
+                "vendor");
+
+            if (!File.Exists(pagePath) ||
+                !File.Exists(Path.Combine(vendorPath, "xterm.js")) ||
+                !File.Exists(Path.Combine(vendorPath, "xterm.css")) ||
+                !File.Exists(Path.Combine(vendorPath, "addon-fit.js")))
             {
                 MessageBox.Show(this,
-                    "找不到本地终端页面：" + pagePath + Environment.NewLine +
-                    "请先在项目目录运行 npm install 和 npm run prepare-terminal。",
+                    "终端前端资源尚未准备完成。" + Environment.NewLine +
+                    "请在项目根目录运行 npm install 和 npm run prepare-terminal。",
                     "GlassTerminal",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
