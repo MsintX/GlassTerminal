@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows;
 using CefSharp;
 
@@ -8,10 +9,17 @@ namespace GlassTerminal
     {
         public App()
         {
-            var settings = new CefSettings();
-            settings.CachePath = System.IO.Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "CefCache");
+            CefRuntime.SubscribeAnyCpuAssemblyResolver();
+
+            var settings = new CefSettings
+            {
+                BackgroundColor = 0x00000000,
+                CachePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "MsintX",
+                    "GlassTerminal",
+                    "CefCache")
+            };
 
             Cef.Initialize(settings);
         }
