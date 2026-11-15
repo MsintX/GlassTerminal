@@ -68,8 +68,8 @@
     }
 
     CefSharp.BindObjectAsync("bridge").then(function () {
-        fitAndResize();
         terminal.focus();
         window.bridge.ready();
+        fitAndResize();
     });
 })();
