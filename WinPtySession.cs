@@ -280,6 +280,10 @@ namespace GlassTerminal
             }
         }
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetDllDirectory(string lpPathName);
+
         private const uint WaitTimeout = 0x00000102;
 
         [DllImport("kernel32.dll", SetLastError = true)]
